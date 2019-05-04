@@ -18,7 +18,8 @@ class AllTodoListViewController: UIViewController, UITextFieldDelegate {
         static let basicMargin: CGFloat = 10
         static let titleFontSize: UIFont = UIFont.boldSystemFont(ofSize: 30)
         static let basicFontSize: UIFont = UIFont.systemFont(ofSize: 20)
-        static let titleViewHeight: Int = 50
+        static let defaultTitleViewHeight: Int = 0
+        static let titleViewHeight: Int = 40
         static let newTextHeight: Int = 30
         
     }
@@ -26,11 +27,16 @@ class AllTodoListViewController: UIViewController, UITextFieldDelegate {
     
     //MARK:- UI Properties
     
-    var tableview: UITableView = {
+    let refreshControl = UIRefreshControl(frame: .zero)
+    
+    lazy var tableview: UITableView = {
         let tableview = UITableView(frame: .zero, style: .plain)
         tableview.register(AllTodoTableViewCell.self, forCellReuseIdentifier: "AllTodo")
         tableview.backgroundColor = .black
         tableview.separatorColor = .black
+        refreshControl.tintColor = .clear
+        refreshControl.addTarget(self, action: #selector(slideDownGesture), for: UIControl.Event.valueChanged)
+        tableview.refreshControl = refreshControl
         return tableview
     }()
     
@@ -40,18 +46,10 @@ class AllTodoListViewController: UIViewController, UITextFieldDelegate {
         return view
     }()
     
-    let titleLabel: UILabel = {
-        let label = UILabel()
-        label.textColor = .white
-        label.font = UI.titleFontSize
-        label.text = "Lists"
-        return label
-    }()
-    
     let newTodoText: UITextField = {
         let text = UITextField()
         text.font = UI.basicFontSize
-        text.backgroundColor = .black //.black 으로 수정
+        text.backgroundColor = .black
         text.textColor = .white
         text.attributedPlaceholder = NSAttributedString(string: "Add new list here", attributes: [NSAttributedString.Key.foregroundColor : UIColor.gray])
         return text
@@ -65,12 +63,13 @@ class AllTodoListViewController: UIViewController, UITextFieldDelegate {
     
     
     
-    
     //MARK:- Properties
     var renameId: Int = 0
     let defaults = UserDefaults.standard
     let encoder = JSONEncoder()
     var todos: [AllTodoModel] = []
+    
+    
     
     //MARK:- Setup UI
     func setupUI() {
@@ -80,11 +79,14 @@ class AllTodoListViewController: UIViewController, UITextFieldDelegate {
         view.addSubview(titleView)
         view.addSubview(tableview)
         
-        titleView.addSubview(titleLabel)
+        //titleView.addSubview(titleLabel)
         titleView.addSubview(newTodoText)
         
+        self.navigationController?.navigationBar.barStyle = .black
         self.navigationItem.rightBarButtonItem = nil
-        
+        self.title = "Lists"
+        self.navigationController?.navigationBar.prefersLargeTitles = true
+        self.navigationItem.largeTitleDisplayMode = .always
         self.newTodoText.delegate = self
 
         
@@ -93,7 +95,7 @@ class AllTodoListViewController: UIViewController, UITextFieldDelegate {
             make.top.equalTo(self.view.snp.topMargin)
             make.leading.equalTo(self.view.snp.leading)
             make.trailing.equalTo(self.view.snp.trailing)
-            make.height.equalTo(UI.titleViewHeight)
+            make.height.equalTo(UI.defaultTitleViewHeight)
         }
         
         tableview.snp.makeConstraints { make in
@@ -103,13 +105,8 @@ class AllTodoListViewController: UIViewController, UITextFieldDelegate {
             make.bottom.equalTo(self.view.snp.bottom)
         }
         
-        titleLabel.snp.makeConstraints { make in
-            make.top.equalTo(titleView.snp.top).offset(UI.basicMargin)
-            make.leading.equalTo(titleView.snp.leading).offset(UI.basicMargin)
-        }
-        
         newTodoText.snp.makeConstraints { make in
-            make.top.equalTo(titleLabel.snp.bottom).offset(UI.basicMargin)
+            make.top.equalTo(titleView.snp.top).offset(UI.basicMargin)
             make.leading.equalTo(titleView.snp.leading).offset(UI.basicMargin)
             make.trailing.equalTo(titleView.snp.trailing).offset(-UI.basicMargin)
             make.height.equalTo(UI.newTextHeight)
@@ -133,7 +130,6 @@ class AllTodoListViewController: UIViewController, UITextFieldDelegate {
         loadAllTodo()
         
         
-        
     }
 
     
@@ -145,11 +141,13 @@ class AllTodoListViewController: UIViewController, UITextFieldDelegate {
     }
     
     @objc func slideDownGesture() {
+        
+        refreshControl.endRefreshing()
         UIView.animate(withDuration: 3.0) {
             
             self.tableview.snp.removeConstraints()
             self.titleView.snp.updateConstraints { make in
-                make.height.equalTo(UI.titleViewHeight*2)
+                make.height.equalTo(UI.titleViewHeight)
             }
             self.tableview.snp.makeConstraints { make in
                 make.top.equalTo(self.titleView.snp.bottom)
@@ -162,7 +160,8 @@ class AllTodoListViewController: UIViewController, UITextFieldDelegate {
         }
         self.navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .cancel, target: self, action: #selector(cancleNew))//cancleBarButton
     }
-    
+        
+
     
     //cancle BarButton Action
     @objc func cancleNew() {
@@ -172,7 +171,7 @@ class AllTodoListViewController: UIViewController, UITextFieldDelegate {
             
             self.tableview.snp.removeConstraints()
             self.titleView.snp.updateConstraints { make in
-                make.height.equalTo(UI.titleViewHeight)
+                make.height.equalTo(UI.defaultTitleViewHeight)
             }
             self.tableview.snp.makeConstraints { make in
                 make.top.equalTo(self.titleView.snp.bottom)
