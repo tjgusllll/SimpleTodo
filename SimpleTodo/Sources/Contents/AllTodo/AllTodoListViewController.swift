@@ -65,6 +65,7 @@ class AllTodoListViewController: UIViewController, UITextFieldDelegate {
     
     //MARK:- Properties
     var renameId: Int = 0
+    var rename: Bool  = false
     let defaults = UserDefaults.standard
     let encoder = JSONEncoder()
     var todos: [AllTodoModel] = []
@@ -236,36 +237,33 @@ extension AllTodoListViewController {
     
     //Add newTodo
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        newTodoText.resignFirstResponder()
-        if renameId == 0 { //add
-            var lastid: Int? = 0
-            if todos.count != 0 {
-                lastid = todos[todos.count-1].id
-            }
-            
-            if let todo = newTodoText.text {
-                if todo != "" {
-                    self.saveTodo(newTodo: todo, lastid: lastid)
-                    newTodoText.text = ""
+        
+            newTodoText.resignFirstResponder()
+           // if renameId == 0 { //add
+                var lastid: Int? = 0
+                if todos.count != 0 {
+                    lastid = todos[todos.count-1].id
                 }
-                cancleNew()
-            }
-        } else { //rename
-            if let renameTodo = newTodoText.text {
-                if renameTodo != "" {
-                    self.renameTodo(renametodo: renameTodo, id: renameId)
-                    newTodoText.text = ""
+                
+                if let todo = newTodoText.text {
+                    if todo != "" {
+                        self.saveTodo(newTodo: todo, lastid: lastid)
+                        newTodoText.text = ""
+                    }
+                    cancleNew()
                 }
-                cancleNew()
-            }
-        }
+           // }
+        
         return true
     }
     
     //Rename Todo
-    func renameTodo(renametodo: String, id: Int){
+    func renameTodo(renametodo: String?, id: Int?){
         //todos.title 수정한뒤 reload, todos를 userdefault에 저장
         var index: Int = 0
+        guard let id = id else { return }
+        guard let renametodo = renametodo else { return }
+        
         
         for todo in todos {
             if id == todo.id {
@@ -274,6 +272,7 @@ extension AllTodoListViewController {
                     defaults.set(encoded, forKey: "TodoList")
                 }
                 renameId = 0
+                rename = false
                 break
             } else {
                 print(index)
@@ -296,8 +295,14 @@ extension AllTodoListViewController: UITableViewDataSource, UITableViewDelegate 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "AllTodo", for: indexPath) as! AllTodoTableViewCell
         cell.backgroundColor = .black
+        cell.configureUI(with: todos[indexPath.row], rename: self.rename)
+        print("cellForRow \(rename)")
+//        if rename == true {
+//            let renameTitle = cell.renameTitle
+//            self.renameTodo(renametodo: renameTitle, id: todos[indexPath.row].id)
+//        }
+        //return cell 이후에 renameTodo호출해야하는데 어케하징.?.?.?
         
-        cell.configureUI(with: todos[indexPath.row])
         return cell
     }
     
@@ -319,14 +324,16 @@ extension AllTodoListViewController: UITableViewDataSource, UITableViewDelegate 
     }
     
     func contextualRenameAction(forRowAtIndexPath indexPath: IndexPath) -> UIContextualAction {
-        
         let action = UIContextualAction(style: .normal, title: "Rename") { (contextAction: UIContextualAction, sourceView: UIView, completionHandler: (Bool) -> Void) in
             completionHandler(true)
-            self.slideDownGesture()
-            self.newTodoText.text = self.todos[indexPath.row].title
-            if let id = self.todos[indexPath.row].id {
-                self.renameId = id
-            }
+            //self.slideDownGesture()
+            //self.newTodoText.text = self.todos[indexPath.row].title
+            self.rename = true
+            print("RenameAction \(self.rename)")
+            
+            //cellForRowAt 호출??? 이렇게????
+            self.tableView(self.tableview, cellForRowAt: indexPath)
+            
         }
         return action
     }
