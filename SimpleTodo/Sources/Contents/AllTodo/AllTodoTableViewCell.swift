@@ -8,6 +8,8 @@
 
 import UIKit
 
+var renametitle: String?
+
 final class AllTodoTableViewCell: UITableViewCell, UITextFieldDelegate {
     
     //MAKR:- Constant
@@ -15,17 +17,18 @@ final class AllTodoTableViewCell: UITableViewCell, UITextFieldDelegate {
     struct UI {
         static let basicMargin: CGFloat = 20
         static let itemFontSize: UIFont = UIFont.systemFont(ofSize: 20)
-        static let textFiledHeight: CGFloat = 30
     }
     
     
     //MARK:- UI Properties
     
-    let itemTitle: UILabel = {
-        let label = UILabel()
-        label.font = UI.itemFontSize
-        label.textColor = .white
-        return label
+    let itemTitle: UITextField = {
+        let text = UITextField()
+        text.font = UI.itemFontSize
+        text.textColor = .white
+        text.backgroundColor = .black
+        text.isEnabled = false
+        return text
     }()
     
     let itemDetailCount: UILabel = {
@@ -35,31 +38,17 @@ final class AllTodoTableViewCell: UITableViewCell, UITextFieldDelegate {
         return label
     }()
     
-    let renameText: UITextField = {
-        let text = UITextField()
-        text.font = UI.itemFontSize
-        text.textColor = .white
-        text.backgroundColor = .black
-        return text
-    }()
     
     
     
     //MARK:- Properties
-    var rename: Bool = false
-    var renameTitle: String?
-    
+    var todoId: Int?
     
     //MAKR:- Initialize
     
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
-        if rename != true {
             setupUI()
-        } else {
-            renameSetupUI()
-            
-        }
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -77,7 +66,9 @@ final class AllTodoTableViewCell: UITableViewCell, UITextFieldDelegate {
         itemTitle.snp.makeConstraints { make in
             make.leading.equalTo(UI.basicMargin)
             make.top.equalTo(UI.basicMargin)
+            make.trailing.equalTo(itemDetailCount.snp.leading)
         }
+        itemTitle.delegate = self
         
         itemDetailCount.snp.makeConstraints { make in
             make.trailing.equalTo(-UI.basicMargin)
@@ -87,41 +78,25 @@ final class AllTodoTableViewCell: UITableViewCell, UITextFieldDelegate {
     }
     
     
-    func renameSetupUI() {
-        print("renameSetup")
-        removeFromSuperview()
-        addSubview(renameText)
-        
-        renameText.snp.makeConstraints { make in
-            make.leading.equalTo(UI.basicMargin)
-            make.top.equalTo(UI.basicMargin)
-            make.trailing.equalTo(-UI.basicMargin)
-            make.height.equalTo(UI.textFiledHeight)
-        }
-        rename = false
-    }
-    
-    
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        renameText.resignFirstResponder()
-        renameTitle = renameText.text
+        print("return")
+        renametitle = itemTitle.text
+        itemTitle.resignFirstResponder()
+        itemTitle.isEnabled = false
+        let rename = AllTodoListViewController()
+        rename.renameTodo(renametodo: renametitle, id: todoId)
         return true
     }
-    
-    func getRenameTitle() -> String? {
-        return renameTitle
-    }
-    
-    
+
+ 
     
     
     //MARK:- Configure UI
-    func configureUI(with todo: AllTodoModel, rename: Bool) {
-        print(rename)
-        self.rename = rename
+    func configureUI(with todo: AllTodoModel) {
         guard let detailCount = todo.detailCount else { return }
         itemTitle.text = todo.title
         itemDetailCount.text = String(detailCount)
+        todoId = todo.id
     }
 
 }

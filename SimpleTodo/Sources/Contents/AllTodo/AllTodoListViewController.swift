@@ -64,7 +64,7 @@ class AllTodoListViewController: UIViewController, UITextFieldDelegate {
     
     
     //MARK:- Properties
-    var renameId: Int = 0
+    var renameId: Int? = 0
     var rename: Bool  = false
     let defaults = UserDefaults.standard
     let encoder = JSONEncoder()
@@ -142,7 +142,8 @@ class AllTodoListViewController: UIViewController, UITextFieldDelegate {
     }
     
     @objc func slideDownGesture() {
-        
+        newTodoText.delegate = self
+        newTodoText.becomeFirstResponder()
         refreshControl.endRefreshing()
         UIView.animate(withDuration: 3.0) {
             
@@ -167,6 +168,8 @@ class AllTodoListViewController: UIViewController, UITextFieldDelegate {
     //cancle BarButton Action
     @objc func cancleNew() {
         self.navigationItem.rightBarButtonItem = nil
+        
+        newTodoText.resignFirstResponder()
         
         UIView.animate(withDuration: 3.0) {
             
@@ -237,33 +240,34 @@ extension AllTodoListViewController {
     
     //Add newTodo
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        
+        print("AllTodo Return")
+        if rename == true {
+            self.renameTodo(renametodo: renametitle, id: renameId)
+        } else {
             newTodoText.resignFirstResponder()
-           // if renameId == 0 { //add
-                var lastid: Int? = 0
-                if todos.count != 0 {
-                    lastid = todos[todos.count-1].id
+            var lastid: Int? = 0
+            if todos.count != 0 {
+                lastid = todos[todos.count-1].id
+            }
+            
+            if let todo = newTodoText.text {
+                if todo != "" {
+                    self.saveTodo(newTodo: todo, lastid: lastid)
+                    newTodoText.text = ""
                 }
-                
-                if let todo = newTodoText.text {
-                    if todo != "" {
-                        self.saveTodo(newTodo: todo, lastid: lastid)
-                        newTodoText.text = ""
-                    }
-                    cancleNew()
-                }
-           // }
+                cancleNew()
+            }
+        }
         
         return true
     }
     
     //Rename Todo
     func renameTodo(renametodo: String?, id: Int?){
-        //todos.title 수정한뒤 reload, todos를 userdefault에 저장
+        print("renameTodo")
         var index: Int = 0
         guard let id = id else { return }
         guard let renametodo = renametodo else { return }
-        
         
         for todo in todos {
             if id == todo.id {
@@ -295,13 +299,8 @@ extension AllTodoListViewController: UITableViewDataSource, UITableViewDelegate 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "AllTodo", for: indexPath) as! AllTodoTableViewCell
         cell.backgroundColor = .black
-        cell.configureUI(with: todos[indexPath.row], rename: self.rename)
-        print("cellForRow \(rename)")
-//        if rename == true {
-//            let renameTitle = cell.renameTitle
-//            self.renameTodo(renametodo: renameTitle, id: todos[indexPath.row].id)
-//        }
-        //return cell 이후에 renameTodo호출해야하는데 어케하징.?.?.?
+        cell.configureUI(with: todos[indexPath.row])
+        cell.selectionStyle = .none
         
         return cell
     }
@@ -325,19 +324,25 @@ extension AllTodoListViewController: UITableViewDataSource, UITableViewDelegate 
     
     func contextualRenameAction(forRowAtIndexPath indexPath: IndexPath) -> UIContextualAction {
         let action = UIContextualAction(style: .normal, title: "Rename") { (contextAction: UIContextualAction, sourceView: UIView, completionHandler: (Bool) -> Void) in
-            completionHandler(true)
-            //self.slideDownGesture()
-            //self.newTodoText.text = self.todos[indexPath.row].title
+            
             self.rename = true
+            self.renameId = self.todos[indexPath.row].id
+            
+            let cell = self.tableview.cellForRow(at: indexPath) as! AllTodoTableViewCell
+            cell.selectionStyle = .none
+            cell.itemTitle.isEnabled = true //isUserInteractionEnabled 
+            cell.itemTitle.becomeFirstResponder()
+            
+            completionHandler(true)
             print("RenameAction \(self.rename)")
             
-            //cellForRowAt 호출??? 이렇게????
-            self.tableView(self.tableview, cellForRowAt: indexPath)
-            
         }
+        
         return action
     }
     
+    
+
     
     
     //Delete trailingSwipeAction
