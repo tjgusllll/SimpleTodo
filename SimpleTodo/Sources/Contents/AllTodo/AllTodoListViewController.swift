@@ -10,6 +10,8 @@ import UIKit
 import SnapKit
 
 
+var todos: [AllTodoModel] = []
+
 class AllTodoListViewController: UIViewController, UITextFieldDelegate {
 
     //MARK:- Constant
@@ -68,7 +70,7 @@ class AllTodoListViewController: UIViewController, UITextFieldDelegate {
     var rename: Bool  = false
     let defaults = UserDefaults.standard
     let encoder = JSONEncoder()
-    var todos: [AllTodoModel] = []
+//    var todos: [AllTodoModel] = []
     
     
     
@@ -183,7 +185,6 @@ class AllTodoListViewController: UIViewController, UITextFieldDelegate {
                 make.trailing.equalTo(self.view.snp.trailing)
                 make.bottom.equalTo(self.view.snp.bottom)
             }
-            self.reloadData()
             self.titleView.layoutIfNeeded()
         }
     }
@@ -200,7 +201,7 @@ extension AllTodoListViewController {
     func saveTodo(newTodo: String, lastid: Int?) {
         guard let lastid = lastid else { return }
         let newtodo = AllTodoModel(title: newTodo, id: lastid+1, detailCount: 0)
-        self.todos.append(newtodo)
+        todos.append(newtodo)
         
         if let encoded = try? encoder.encode(todos) {
             defaults.set(encoded, forKey: "TodoList")
@@ -224,7 +225,7 @@ extension AllTodoListViewController {
         
         for todo in todos {
             if id == todo.id {
-                self.todos.remove(at: index)
+                todos.remove(at: index)
                 print("delete \(index)")
                 if let encoded = try? encoder.encode(todos) {
                     defaults.set(encoded, forKey: "TodoList")
@@ -271,7 +272,7 @@ extension AllTodoListViewController {
         
         for todo in todos {
             if id == todo.id {
-                self.todos[index].title = renametodo
+                todos[index].title = renametodo
                 if let encoded = try? encoder.encode(todos) {
                     defaults.set(encoded, forKey: "TodoList")
                 }
@@ -283,7 +284,7 @@ extension AllTodoListViewController {
                 index+=1
             }
         }
-        self.reloadData()
+        //self.reloadData()
     }
     
 }
@@ -326,11 +327,11 @@ extension AllTodoListViewController: UITableViewDataSource, UITableViewDelegate 
         let action = UIContextualAction(style: .normal, title: "Rename") { (contextAction: UIContextualAction, sourceView: UIView, completionHandler: (Bool) -> Void) in
             
             self.rename = true
-            self.renameId = self.todos[indexPath.row].id
+            self.renameId = todos[indexPath.row].id
             
             let cell = self.tableview.cellForRow(at: indexPath) as! AllTodoTableViewCell
             cell.selectionStyle = .none
-            cell.itemTitle.isEnabled = true //isUserInteractionEnabled 
+            cell.itemTitle.isEnabled = true//isUserInteractionEnabled
             cell.itemTitle.becomeFirstResponder()
             
             completionHandler(true)
